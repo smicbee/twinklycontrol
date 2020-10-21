@@ -8,6 +8,7 @@ import math
 import numpy
 import cv2 
 import os 
+from datetime import datetime
 
 class twinkly:
 	def __init__(self, ip = '192.168.0.13'):
@@ -219,11 +220,74 @@ class twinkly:
 		url = "/xled/v1/fw/offsets"
 		return self.doGet(url)
 
+	def draw_clock(self):
+		now = datetime.now()
+		mins = ""	
+		
+		self.set_rt_mode()
+		while True:
+			now = datetime.now()
+
+			hours = now.strftime("%H")
+			mins = now.strftime("%M")
+			seconds = now.strftime("%S")
+
+			font = ImageFont.truetype('/root/twinkly/small_pixel.ttf', size=8)
+
+			(x, y) = (0, 0)
+
+			#draw hours and mins
+
+
+			color = 'rgba(0, 0, 0, 255)' 
+			col = (int(seconds) / 60 * 255)
+
+			#active Spot colors
+			A = int((int(seconds) % 6)/5*255)
+			R = int((int(seconds) % 6)/5*255)
+			G = int((int(seconds) % 6)/5*255)
+			B = int((int(seconds) % 6)/5*255)
+			
+
+			secondscolor = "rgba(" + str(255) + "," + str(255) + "," + str(255) + ",0)"
+			bri = int(seconds)/60/ledwidth*255
+			secondscoloractive = "rgba(" + str(R) + "," + str(G) + "," + str(B) + "," + str(A) + ")"
+			# draw the message on the background
+
+			t = 0
+
+			while len(hours) < 2:
+				hours = "0" + hours
+			while len(mins) < 2:
+				mins = "0" + mins
+
+
+			mat = numpy.zeros([ledwidth,ledheight], dtype = tuple)
+
+			#Stunden
+			(x, y) = (1, 0)
+			im = Image.new(mode = "RGBA", size = (ledwidth,ledheight), color = (0,0,0,0))
+			draw = ImageDraw.Draw(im)
+			draw.text((x, y), hours, fill=color, font=font)
+			#Minuten
+			(x, y) = (1, 11)
+			draw.text((x, y), mins, fill=color, font=font)
+			#Sekundenbalken
+			(x,y) = (0,20)
+			draw.line([(x,y),((int(seconds)/60)*ledwidth,y)],fill=secondscolor,width = 1)
+			draw.line([((int(seconds)/60)*ledwidth,y),((int(seconds)/60)*ledwidth,y)],fill=secondscoloractive,width = 1)
+
+			arr = image_to_bytestr(im,ledwidth,ledheight)
+
+			self.set_rt_frame(arr)
+			time.sleep(1)
+			
+
 
 
 	def draw_text(self, message):
 
-		font = ImageFont.truetype('B:\Google Drive\Desktop\ConnectionIi-2wj8.otf', size=14)
+		font = ImageFont.truetype('/root/twinkly/small_pixel.ttf', size=14)
 
 		(x, y) = (0, 0)
 
@@ -250,25 +314,11 @@ class twinkly:
 			draw = ImageDraw.Draw(im)
 			draw.text((x, y), letter, fill=color, font=font)
 
-			mat = numpy.zeros([ledwidth,ledheight], dtype = tuple)
-
-			arr = bytearray()
-
-			for x in range(ledwidth):
-				for y in range(ledheight):
-					mat[x][y] = im.getpixel((x,y))
-					A = '%02X' % 0
-					R = '%02X' % mat[x][y][0]
-					G = '%02X' % mat[x][y][1]
-					B = '%02X' % mat[x][y][2]
-
-					arr = arr + bytearray.fromhex(A + R + G + B) #A R G B
-
-
+			arr = image_to_bytestr(im,ledwidth,ledheight)
 			self.set_rt_frame(arr)
 
 			time.sleep(1)
-			arr = bytearray.fromhex("00"*4*210)
+			arr = bytearray.fromhex("00"*4*ledwidth*ledheight)
 			self.set_rt_frame(arr)
 			t = t + 1
 			time.sleep(0.02)
@@ -432,6 +482,25 @@ class twinkly:
 		self.set_movie_config(1,ledwidth*int(origy/ratio),1)
 		self.get_led_reset()
 
+def image_to_bytestr(img,dimx,dimy):
+
+	mat = numpy.zeros([dimx,dimy], dtype = tuple)
+
+	arr = bytearray()
+
+	for x in range(dimx):
+		for y in range(dimy):
+			mat[x][y] = img.getpixel((x,y))
+			A = '%02X' % mat[x][y][3]
+			R = '%02X' % mat[x][y][0]
+			G = '%02X' % mat[x][y][1]
+			B = '%02X' % mat[x][y][2]
+
+			arr = arr + bytearray.fromhex(A + R + G + B) #A R G B
+
+
+	return arr
+	
 def frame_to_bytestr(frame,dimx,dimy):
 	ledwidth = dimx
 	ledheight = dimy
@@ -464,6 +533,6 @@ twi.login()
 #twi.draw_text("  Peroxo <3 ") #draw text to curtain
 #twi.play_video("B:\Google Drive\Desktop\AC Biologen Zusammenfassung.mp4") #stream live to curtain
 #twi.play_movie("B:\Google Drive\Desktop\Komp 1_1.mp4") #upload movie to curtain
-twi.play_image("B:\\Google Drive\\Desktop\\1200px-Flat_tick_icon.png") #draw image to curtain
-
+#twi.play_image("B:\\Google Drive\\Desktop\\1200px-Flat_tick_icon.png") #draw image to curtain
+twi.draw_clock()
 
