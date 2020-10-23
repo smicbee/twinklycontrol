@@ -11,10 +11,12 @@ import os
 from datetime import datetime
 
 class twinkly:
-	def __init__(self, ip = '192.168.0.13'):
+	def __init__(self, ip, ledwidth, ledheight):
 		self.token = None
 		self.ip = ip
 		self.path = 'http://' + ip
+		self.ledwidth = ledwidth
+		self.ledheight = ledheight
 		
 	def postData(self, data,url):
 		req = urllib2.Request(self.path+url)
@@ -225,69 +227,70 @@ class twinkly:
 		mins = ""	
 		
 		self.set_rt_mode()
-		while True:
-			now = datetime.now()
+	
+		now = datetime.now()
 
-			hours = now.strftime("%H")
-			mins = now.strftime("%M")
-			seconds = now.strftime("%S")
+		hours = now.strftime("%H")
+		mins = now.strftime("%M")
+		seconds = now.strftime("%S.%f")
 
-			font = ImageFont.truetype('/root/twinkly/small_pixel.ttf', size=8)
+		font = ImageFont.truetype('/root/twinkly/small_pixel.ttf', size=8)
 
-			(x, y) = (0, 0)
+		(x, y) = (0, 0)
 
-			#draw hours and mins
-
-
-			color = 'rgba(0, 0, 0, 255)' 
-			col = (int(seconds) / 60 * 255)
-
-			#active Spot colors
-			A = int((int(seconds) % 6)/5*255)
-			R = int((int(seconds) % 6)/5*255)
-			G = int((int(seconds) % 6)/5*255)
-			B = int((int(seconds) % 6)/5*255)
-			
-
-			secondscolor = "rgba(" + str(255) + "," + str(255) + "," + str(255) + ",0)"
-			bri = int(seconds)/60/ledwidth*255
-			secondscoloractive = "rgba(" + str(R) + "," + str(G) + "," + str(B) + "," + str(A) + ")"
-			# draw the message on the background
-
-			t = 0
-
-			while len(hours) < 2:
-				hours = "0" + hours
-			while len(mins) < 2:
-				mins = "0" + mins
+		#draw hours and mins
 
 
-			mat = numpy.zeros([ledwidth,ledheight], dtype = tuple)
+		color = 'rgba(0, 0, 0, 255)' 
+		col = (float(seconds) / 60 * 255)
 
-			#Stunden
-			(x, y) = (1, 0)
-			im = Image.new(mode = "RGBA", size = (ledwidth,ledheight), color = (0,0,0,0))
-			draw = ImageDraw.Draw(im)
-			draw.text((x, y), hours, fill=color, font=font)
-			#Minuten
-			(x, y) = (1, 11)
-			draw.text((x, y), mins, fill=color, font=font)
-			#Sekundenbalken
-			(x,y) = (0,20)
-			draw.line([(x,y),((int(seconds)/60)*ledwidth,y)],fill=secondscolor,width = 1)
-			draw.line([((int(seconds)/60)*ledwidth,y),((int(seconds)/60)*ledwidth,y)],fill=secondscoloractive,width = 1)
+		#active Spot colors
+		A = math.floor((float(seconds) % 6)/6*255)
+		R = math.floor((float(seconds) % 6)/6*255)
+		G = math.floor((float(seconds) % 6)/6*255)
+		B = math.floor((float(seconds) % 6)/6*255)
+		
 
-			arr = image_to_bytestr(im,ledwidth,ledheight)
+		secondscolor = "rgba(" + str(255) + "," + str(255) + "," + str(255) + ",255)"
+		bri = round(float(seconds),0)/60/self.ledwidth*255
+		secondscoloractive = "rgba(" + str(R) + "," + str(G) + "," + str(B) + "," + str(A) + ")"
+		# draw the message on the background
 
-			self.set_rt_frame(arr)
-			time.sleep(1)
+		t = 0
+
+		while len(hours) < 2:
+			hours = "0" + hours
+		while len(mins) < 2:
+			mins = "0" + mins
+
+
+		mat = numpy.zeros([self.ledwidth,self.ledheight], dtype = tuple)
+
+		#Stunden
+		(x, y) = (1, 0)
+		im = Image.new(mode = "RGBA", size = (self.ledwidth,self.ledheight), color = (0,0,0,0))
+		draw = ImageDraw.Draw(im)
+		draw.text((x, y), hours, fill=color, font=font)
+		#Minuten
+		(x, y) = (1, 11)
+		draw.text((x, y), mins, fill=color, font=font)
+		#Sekundenbalken
+		(x,y) = (0,20)
+		xa = math.floor(float(seconds)/60*self.ledwidth)
+		draw.line([(x,y),(xa,y)],fill=secondscolor,width = 1)
+		draw.line([(xa,y),(xa,y)],fill=secondscoloractive,width = 1)
+
+		arr = image_to_bytestr(im,self.ledwidth,self.ledheight)
+
+		self.set_rt_frame(arr)
+		
 			
 
 
 
 	def draw_text(self, message):
 
-		font = ImageFont.truetype('/root/twinkly/small_pixel.ttf', size=14)
+		font = ImageFont.truetype('/root/twinkly/ConnectionIi-2wj8.otf', size=14)
 
 		(x, y) = (0, 0)
 
@@ -310,15 +313,15 @@ class twinkly:
 
 
 			(x, y) = (0, 0)
-			im = Image.new(mode = "RGB", size = (ledwidth,ledheight), color = (0,0,0))
+			im = Image.new(mode = "RGB", size = (self.ledwidth,self.ledheight), color = (0,0,0))
 			draw = ImageDraw.Draw(im)
 			draw.text((x, y), letter, fill=color, font=font)
 
-			arr = image_to_bytestr(im,ledwidth,ledheight)
+			arr = image_to_bytestr(im,self.ledwidth,self.ledheight)
 			self.set_rt_frame(arr)
 
 			time.sleep(1)
-			arr = bytearray.fromhex("00"*4*ledwidth*ledheight)
+			arr = bytearray.fromhex("00"*4*self.ledwidth*self.ledheight)
 			self.set_rt_frame(arr)
 			t = t + 1
 			time.sleep(0.02)
@@ -366,9 +369,9 @@ class twinkly:
 
 				arr = bytearray()
 
-				reframe = cv2.resize(frame,(ledwidth,ledheight),cv2.INTER_AREA)
+				reframe = cv2.resize(frame,(self.ledwidth,self.ledheight),cv2.INTER_AREA)
 
-				byteout = frame_to_bytestr(reframe,ledwidth,ledheight)
+				byteout = frame_to_bytestr(reframe,self.ledwidth,self.ledheight)
 
 				self.set_rt_frame(byteout)
 
@@ -425,9 +428,9 @@ class twinkly:
 
 				
 
-				reframe = cv2.resize(frame,(ledwidth,ledheight),cv2.INTER_AREA)
+				reframe = cv2.resize(frame,(self.ledwidth,self.ledheight),cv2.INTER_AREA)
 
-				byteout = byteout + frame_to_bytestr(reframe,ledwidth,ledheight)
+				byteout = byteout + frame_to_bytestr(reframe,self.ledwidth,self.ledheight)
 
 				
 				currentframe += 1
@@ -439,7 +442,7 @@ class twinkly:
 		
 		self.uploadMovie(byteout)
 		self.set_movie_mode()
-		self.set_movie_config(42,ledwidth*ledheight,currentframe)
+		self.set_movie_config(42,self.ledwidth*self.ledheight,currentframe)
 		self.get_led_reset()
 
 	def play_image(self, filepath):
@@ -452,20 +455,20 @@ class twinkly:
 		R = 0
 		G = 0
 		B = 0
-		mat = numpy.zeros([ledheight,ledwidth], dtype = tuple)
+		mat = numpy.zeros([self.ledheight,self.ledwidth], dtype = tuple)
 		
 		im = cv2.imread(filepath)
 		origx = im.shape[0]
 		origy = im.shape[1]
-		ratio = origx/ledwidth
+		ratio = origx/self.ledwidth
 		stretchfactor = 1.5
 
-		reframe = cv2.resize(im,(ledwidth,int(origy/ratio*stretchfactor)),cv2.INTER_AREA)
+		reframe = cv2.resize(im,(self.ledwidth,int(origy/ratio*stretchfactor)),cv2.INTER_AREA)
 		
 		t = 0
-		rendimg = numpy.zeros([ledheight,ledwidth], dtype = tuple)
-		for x in range(0,ledwidth):
-			for y in range(0,ledheight):
+		rendimg = numpy.zeros([self.ledheight,self.ledwidth], dtype = tuple)
+		for x in range(0,self.ledwidth):
+			for y in range(0,self.ledheight):
 				try:
 					rendimg[y][x] = reframe[y][x]
 				except:
@@ -474,12 +477,12 @@ class twinkly:
 				t = t + 1
 
 		 
-		byteout = byteout + frame_to_bytestr(rendimg,ledwidth,ledheight)
+		byteout = byteout + frame_to_bytestr(rendimg,self.ledwidth,self.ledheight)
 
 		
 		self.uploadMovie(byteout)
 		self.set_movie_mode()
-		self.set_movie_config(1,ledwidth*int(origy/ratio),1)
+		self.set_movie_config(1,self.ledwidth*int(origy/ratio),1)
 		self.get_led_reset()
 
 def image_to_bytestr(img,dimx,dimy):
@@ -525,14 +528,14 @@ def frame_to_bytestr(frame,dimx,dimy):
 	return arr
 
 
-twi = twinkly()
-ledwidth = 10
-ledheight = 21
+#twi = twinkly()
+#ledwidth = 10
+#ledheight = 21
 
-twi.login()
+#twi.login()
 #twi.draw_text("  Peroxo <3 ") #draw text to curtain
 #twi.play_video("B:\Google Drive\Desktop\AC Biologen Zusammenfassung.mp4") #stream live to curtain
 #twi.play_movie("B:\Google Drive\Desktop\Komp 1_1.mp4") #upload movie to curtain
-#twi.play_image("B:\\Google Drive\\Desktop\\1200px-Flat_tick_icon.png") #draw image to curtain
-twi.draw_clock()
+#twi.play_image("B:\\Google Drive\\Desktop\\herz.png") #draw image to curtain
+#twi.draw_clock()
 
